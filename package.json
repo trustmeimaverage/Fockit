@@ -1,0 +1,15 @@
+{
+  "name": "fockit",
+  "version": "1.0.0",
+  "description": "Fockit! — Local-network live quiz platform",
+  "scripts": {
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "dev": "concurrently \"cd server && npm run dev\" \"cd client && npm run dev\"",
+    "build": "cd client && npm run build",
+    "start": "cd server && npm start",
+    "setup": "npm run install:all && npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
