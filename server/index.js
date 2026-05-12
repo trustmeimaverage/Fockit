@@ -6,6 +6,7 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
 const gm = require('./gameManager');
+const db = require('./db');
 
 const app = express();
 const server = http.createServer(app);
@@ -36,6 +37,27 @@ app.get('/api/games/:pin', (req, res) => {
   if (!game) return res.status(404).json({ error: 'Game not found' });
   if (game.state !== 'LOBBY') return res.status(409).json({ error: 'Game already started' });
   res.json({ exists: true, gameName: game.gameName, playerCount: gm.getActivePlayers(game.pin).length });
+});
+
+// Game history (most recent completed games)
+app.get('/api/history', async (req, res) => {
+  try {
+    const games = await db.getRecentGames(20);
+    res.json(games);
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Full details for one completed game
+app.get('/api/history/:id', async (req, res) => {
+  try {
+    const game = await db.getGameById(parseInt(req.params.id));
+    if (!game) return res.status(404).json({ error: 'Not found' });
+    res.json(game);
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
 // Serve built React app in production
@@ -293,22 +315,27 @@ function endGame(pin) {
   gm.setState(pin, 'GAME_END');
   const leaderboard = gm.getLeaderboard(pin);
   io.to(`game:${pin}`).emit('game:end', { leaderboard });
+  // Persist to PostgreSQL (non-blocking, non-fatal)
+  db.saveCompletedGame(game, leaderboard).catch(() => {});
 }
 
 // ─── Start server ─────────────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n🎮  Fockit! server running on http://localhost:${PORT}`);
-  console.log(`📡  Accessible at http://<your-ip>:${PORT} on your local network\n`);
 
-  // Announce via mDNS so clients can reach via fockit.local
-  try {
-    const Bonjour = require('bonjour-service');
-    const bonjour = new Bonjour.Bonjour();
-    bonjour.publish({ name: 'Fockit', type: 'http', port: PORT });
-    console.log('✅  mDNS: fockit.local is live');
-  } catch (e) {
-    console.log('⚠️   mDNS unavailable (install bonjour-service or use IP directly)');
-  }
+db.initDb().then(() => {
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n🎮  Fockit! server running on http://localhost:${PORT}`);
+    console.log(`📡  Accessible at http://<your-ip>:${PORT} on your local network\n`);
+
+    // Announce via mDNS so clients can reach via fockit.local
+    try {
+      const Bonjour = require('bonjour-service');
+      const bonjour = new Bonjour.Bonjour();
+      bonjour.publish({ name: 'Fockit', type: 'http', port: PORT });
+      console.log('✅  mDNS: fockit.local is live');
+    } catch (e) {
+      console.log('⚠️   mDNS unavailable (install bonjour-service or use IP directly)');
+    }
+  });
 });
