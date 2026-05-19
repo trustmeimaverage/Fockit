@@ -4,32 +4,53 @@ A local-network live quiz platform. No internet required. Host creates a game, p
 
 ---
 
-## Quick Start
+## Tech Stack
+
+- **Frontend:** React, Vite, Socket.io-client
+- **Backend:** Python (Django), ASGI (Uvicorn), python-socketio
+- **Database:** PostgreSQL
+
+---
+
+## Quick Start (Docker - Recommended)
+
+The easiest way to run the application is using Docker Compose, which sets up the database, backend, and frontend automatically.
+
+```bash
+docker-compose up --build
+```
+
+Server starts on `http://localhost:3001`
+
+---
+
+## Manual Development Setup
 
 ### Requirements
 
 - Node.js 18+
 - npm 9+
+- Python 3.12+
 
 ### 1. Install Dependencies
 
-```bash
-npm run install:all
-```
-
-### 2. Build Frontend
+This will create a Python virtual environment (`venv`), install Django requirements, and install the React frontend dependencies.
 
 ```bash
-npm run build
+npm run setup
 ```
 
-### 3. Start Server
+### 2. Start Servers
+
+Run the backend (Uvicorn) and frontend (Vite) development servers simultaneously:
 
 ```bash
-npm start
+npm run dev
 ```
 
-Server starts on `http://localhost:3001`
+- Client dev server: `http://localhost:3000`
+- Server (API & Sockets): `http://localhost:3001`
+- *Note: API calls and sockets from the client are proxied automatically.*
 
 ---
 
@@ -47,27 +68,18 @@ Open `http://<host-ip>:3001` — replace `<host-ip>` with machine's local IP add
 
 ---
 
-## Development Mode (Hot Reload)
-
-Run server and client dev servers simultaneously:
-
-```bash
-npm run dev
-```
-
-- Client dev server: `http://localhost:3000`
-- Server: `http://localhost:3001`
-- API calls and sockets are proxied automatically
-
----
-
 ## Project Structure
 
 ```
 fockit/
 ├── server/
-│   ├── index.js          # Express + Socket.io server
-│   └── gameManager.js    # In-memory game session logic
+│   ├── fockit_project/   # Django configuration and settings
+│   ├── api/              # Django app (models, views, socket endpoints)
+│   │   ├── game_manager.py # In-memory game session logic
+│   │   ├── sockets.py    # Websocket event handlers
+│   │   ├── models.py     # PostgreSQL database schema
+│   │   └── views.py      # REST APIs
+│   └── requirements.txt  # Python dependencies
 ├── client/
 │   ├── src/
 │   │   ├── App.jsx
@@ -79,7 +91,8 @@ fockit/
 │   │       ├── HostPage.jsx    # Host lobby / game view / results
 │   │       └── PlayPage.jsx    # Client full flow
 │   └── index.html
-└── package.json
+├── docker-compose.yml
+└── Dockerfile
 ```
 
 ---
@@ -120,5 +133,7 @@ Faster correct answers score more. Wrong answers score 0.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT`   | `3001`  | Server port |
+| `PGHOST` | `localhost` | PostgreSQL host |
+| `PGUSER` | `fockit` | PostgreSQL username |
 
-Set via environment: `PORT=8080 npm start`
+Set via environment variables if running manually.
