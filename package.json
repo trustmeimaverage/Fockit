@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "Fockit! — Local-network live quiz platform",
   "scripts": {
-    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
-    "dev": "concurrently \"cd server && npm run dev\" \"cd client && npm run dev\"",
+    "install:all": "cd server && python3 -m venv venv && ./venv/bin/pip install -r requirements.txt && cd ../client && npm install",
+    "dev": "concurrently \"cd server && ./venv/bin/uvicorn fockit_project.asgi:application --reload --port 3001\" \"cd client && npm run dev\"",
     "build": "cd client && npm run build",
-    "start": "cd server && npm start",
+    "start": "cd server && ./venv/bin/uvicorn fockit_project.asgi:application --port 3001 --host 0.0.0.0",
     "setup": "npm run install:all && npm run build"
   },
   "devDependencies": {
